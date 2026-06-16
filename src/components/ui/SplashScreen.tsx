@@ -1,203 +1,195 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import Image from 'next/image';
 
 export default function SplashScreen() {
   const [visible, setVisible] = useState(true);
-  const [phase, setPhase] = useState(0);
   const [mounted, setMounted] = useState(false);
-
-  // Generate stable random positions once on mount (client-only)
-  const particles = useMemo(() => {
-    if (typeof window === 'undefined') return [];
-    return Array.from({ length: 20 }).map(() => ({
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      duration: 2 + Math.random() * 2,
-      delay: Math.random() * 1.5,
-    }));
-  }, []);
+  const [phase, setPhase] = useState<'idle' | 'zoom' | 'sweep' | 'hold' | 'exit'>('idle');
+  const logoControls = useAnimation();
+  const sweepControls = useAnimation();
+  const shakeControls = useAnimation();
+  const containerControls = useAnimation();
 
   useEffect(() => {
     setMounted(true);
 
-    // Check if user has already seen splash
     const seen = sessionStorage.getItem('tfc-splash-done');
     if (seen === 'true') {
       setVisible(false);
       return;
     }
 
-    const t1 = setTimeout(() => setPhase(1), 500);
-    const t2 = setTimeout(() => setPhase(2), 1500);
-    const t3 = setTimeout(() => setPhase(3), 2500);
-    const t4 = setTimeout(() => {
+    async function runIntro() {
+      // Phase 1: Brief pause in darkness (300ms)
+      await new Promise(r => setTimeout(r, 300));
+
+      // Phase 2: Logo slams in from small to large with overshoot
+      setPhase('zoom');
+      await logoControls.start({
+        scale: [0.05, 1.08, 0.97, 1.0],
+        opacity: [0, 1, 1, 1],
+        transition: {
+          duration: 0.75,
+          times: [0, 0.65, 0.85, 1],
+          ease: 'easeOut',
+        },
+      });
+
+      // Phase 3: Red light sweep across logo (Netflix signature)
+      setPhase('sweep');
+      await sweepControls.start({
+        x: ['-120%', '120%'],
+        transition: {
+          duration: 0.55,
+          ease: [0.22, 1, 0.36, 1],
+        },
+      });
+
+      // Phase 4: Subtle screen shake (bass hit feel)
+      await shakeControls.start({
+        x: [0, -6, 5, -3, 2, 0],
+        y: [0, 3, -2, 1, 0, 0],
+        transition: {
+          duration: 0.35,
+          ease: 'easeInOut',
+        },
+      });
+
+      // Phase 5: Hold on logo (glow pulses)
+      setPhase('hold');
+      await new Promise(r => setTimeout(r, 1200));
+
+      // Phase 6: Fade entire screen to black then exit
+      setPhase('exit');
+      await containerControls.start({
+        opacity: 0,
+        transition: { duration: 0.7, ease: 'easeInOut' },
+      });
+
       setVisible(false);
       sessionStorage.setItem('tfc-splash-done', 'true');
-    }, 3500);
+    }
 
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-    };
-  }, []);
+    runIntro();
+  }, [logoControls, sweepControls, shakeControls, containerControls]);
 
-  // Don't render anything on server to avoid hydration mismatch
   if (!mounted) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-cinema-black" />
-    );
+    return <div className="fixed inset-0 z-[9999] bg-black" />;
   }
 
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.6 } }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-cinema-black overflow-hidden"
+          animate={containerControls}
+          className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-black"
         >
-          {/* Background particles (client-only, no hydration issue) */}
-          <div className="absolute inset-0 overflow-hidden">
-            {particles.map((p, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-1 h-1 bg-cinema-red rounded-full"
-                style={{ left: `${p.left}%`, top: `${p.top}%` }}
-                animate={{ y: [0, -200], opacity: [0, 0.8, 0] }}
-                transition={{
-                  duration: p.duration,
-                  delay: p.delay,
-                  repeat: Infinity,
-                  ease: 'easeOut',
-                }}
-              />
-            ))}
-          </div>
+          {/* Radial vignette overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(ellipse 60% 60% at 50% 50%, transparent 30%, rgba(0,0,0,0.85) 100%)',
+            }}
+          />
 
-          {/* Film strip lines */}
-          <div className="absolute inset-0 opacity-5">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div
-                key={i}
-                className="absolute top-0 bottom-0 w-px bg-white"
-                style={{ left: `${(i + 1) * 10}%` }}
-              />
-            ))}
-          </div>
-
-          {/* Logo */}
-          <div className="relative flex flex-col items-center gap-6">
-            {/* TFC Logo */}
+          {/* Logo container — shake target */}
+          <motion.div
+            animate={shakeControls}
+            className="relative flex items-center justify-center"
+          >
+            {/* Animated glow behind logo */}
             <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-              className="relative"
-            >
-              {/* Outer ring */}
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                style={{
-                  width: 140,
-                  height: 140,
-                  borderRadius: '50%',
-                  border: '2px solid rgba(229,9,20,0.4)',
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  marginLeft: -70,
-                  marginTop: -70,
-                }}
-              />
+              className="absolute"
+              style={{
+                width: 360,
+                height: 360,
+                borderRadius: '50%',
+                background:
+                  'radial-gradient(circle, rgba(180,0,0,0.35) 0%, rgba(120,0,0,0.15) 50%, transparent 75%)',
+                filter: 'blur(40px)',
+              }}
+              animate={
+                phase === 'hold'
+                  ? {
+                      opacity: [0.6, 1, 0.6],
+                      scale: [1, 1.1, 1],
+                    }
+                  : { opacity: 0.4, scale: 1 }
+              }
+              transition={
+                phase === 'hold'
+                  ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
+                  : {}
+              }
+            />
 
-              {/* Main logo box */}
-              <div
-                className="relative w-24 h-24 flex items-center justify-center"
-                style={{
-                  background: 'linear-gradient(135deg, #1A0000 0%, #0A0A0A 100%)',
-                  border: '2px solid rgba(229,9,20,0.6)',
-                  borderRadius: '16px',
-                  boxShadow: '0 0 40px rgba(229,9,20,0.4), inset 0 0 20px rgba(229,9,20,0.1)',
-                }}
-              >
-                <span
-                  className="text-3xl font-black tracking-tighter"
+            {/* Logo — zoom target */}
+            <motion.div
+              animate={logoControls}
+              initial={{ scale: 0.05, opacity: 0 }}
+              className="relative z-10"
+              style={{ willChange: 'transform, opacity' }}
+            >
+              {/* Sweep light overlay clipped to logo bounds */}
+              <div className="relative overflow-hidden" style={{ borderRadius: 8 }}>
+                <Image
+                  src="/images/logo.png"
+                  alt="The Final Cut"
+                  width={300}
+                  height={300}
+                  priority
+                  className="relative z-10 select-none"
                   style={{
-                    fontFamily: 'Outfit, sans-serif',
-                    background: 'linear-gradient(135deg, #FF1A1A, #E50914, #B20710)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 0 8px rgba(229,9,20,0.8))',
+                    filter:
+                      phase === 'hold'
+                        ? 'drop-shadow(0 0 40px rgba(200,0,0,0.6)) drop-shadow(0 0 80px rgba(160,0,0,0.3))'
+                        : 'drop-shadow(0 0 20px rgba(200,0,0,0.4))',
+                    transition: 'filter 0.5s ease',
                   }}
-                >
-                  TFC
-                </span>
-                {/* Film holes */}
-                <div className="absolute top-1 left-0 right-0 flex justify-around">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className="w-1.5 h-1.5 bg-cinema-black rounded-sm opacity-70" />
-                  ))}
-                </div>
-                <div className="absolute bottom-1 left-0 right-0 flex justify-around">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className="w-1.5 h-1.5 bg-cinema-black rounded-sm opacity-70" />
-                  ))}
-                </div>
+                  draggable={false}
+                />
+
+                {/* Netflix-style red sweep stripe — clips inside logo */}
+                <motion.div
+                  animate={sweepControls}
+                  initial={{ x: '-120%' }}
+                  className="absolute inset-0 pointer-events-none z-20"
+                  style={{
+                    background:
+                      'linear-gradient(105deg, transparent 30%, rgba(255,60,60,0.18) 45%, rgba(255,120,120,0.55) 50%, rgba(255,60,60,0.18) 55%, transparent 70%)',
+                    mixBlendMode: 'screen',
+                  }}
+                />
               </div>
             </motion.div>
+          </motion.div>
 
-            {/* Brand name */}
-            <AnimatePresence>
-              {phase >= 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="text-center"
-                >
-                  <h1
-                    className="text-4xl font-black tracking-wide"
-                    style={{
-                      fontFamily: 'Outfit, sans-serif',
-                      background: 'linear-gradient(135deg, #FFFFFF 0%, #C8C8D0 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      letterSpacing: '0.15em',
-                    }}
-                  >
-                    THE<span style={{ WebkitTextFillColor: '#E50914' }}>FINAL</span>CUT
-                  </h1>
-                  <p className="text-cinema-silver text-sm tracking-[0.3em] mt-1 uppercase">
-                    Cinema Redefined
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Full-screen sweep flash (hits the whole screen on impact) */}
+          {phase === 'sweep' && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none z-30"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.12, 0] }}
+              transition={{ duration: 0.55, ease: 'easeOut' }}
+              style={{
+                background:
+                  'radial-gradient(ellipse 80% 80% at 50% 50%, rgba(220,0,0,0.15) 0%, transparent 70%)',
+              }}
+            />
+          )}
 
-            {/* Loading bar */}
-            <AnimatePresence>
-              {phase >= 2 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="w-48 h-0.5 bg-cinema-card overflow-hidden rounded-full"
-                >
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: 'linear-gradient(90deg, #E50914, #FF6B6B)' }}
-                    initial={{ width: '0%' }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Scan lines texture for cinematic feel */}
+          <div
+            className="absolute inset-0 pointer-events-none z-40 opacity-[0.03]"
+            style={{
+              backgroundImage:
+                'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,1) 2px, rgba(255,255,255,1) 4px)',
+            }}
+          />
         </motion.div>
       )}
     </AnimatePresence>

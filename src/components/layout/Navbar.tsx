@@ -72,26 +72,17 @@ export default function Navbar() {
           <div className="flex items-center justify-between gap-4">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-              <div
-                className="w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-300 group-hover:shadow-neon-red"
+              <Image
+                src="/images/logo.png"
+                alt="The Final Cut"
+                width={44}
+                height={44}
+                className="rounded-lg transition-all duration-300 group-hover:brightness-125"
                 style={{
-                  background: 'linear-gradient(135deg, #1A0000, #0A0A0A)',
-                  border: '1.5px solid rgba(229,9,20,0.5)',
+                  filter: 'drop-shadow(0 0 8px rgba(139, 30, 30, 0.3))',
                 }}
-              >
-                <span
-                  className="text-sm font-black tracking-tight"
-                  style={{
-                    fontFamily: 'Outfit, sans-serif',
-                    background: 'linear-gradient(135deg, #FF1A1A, #E50914)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 0 6px rgba(229,9,20,0.6))',
-                  }}
-                >
-                  TFC
-                </span>
-              </div>
+                priority
+              />
               <span
                 className="text-lg font-black tracking-wide hidden sm:block"
                 style={{

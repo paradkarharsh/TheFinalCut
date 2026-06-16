@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Film, Tv, Star, Shuffle, Compass, ExternalLink, Mail } from 'lucide-react';
 
@@ -77,28 +78,17 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
-              <div
-                className="w-12 h-12 flex items-center justify-center rounded-xl"
+            <Link href="/" className="inline-flex items-center gap-3 mb-6 group">
+              <Image
+                src="/images/logo.png"
+                alt="The Final Cut"
+                width={52}
+                height={52}
+                className="rounded-xl transition-all duration-300 group-hover:brightness-125"
                 style={{
-                  background: 'linear-gradient(135deg, #1A0000, #0A0A0A)',
-                  border: '1.5px solid rgba(229,9,20,0.5)',
-                  boxShadow: '0 0 20px rgba(229,9,20,0.2)',
+                  filter: 'drop-shadow(0 0 12px rgba(139, 30, 30, 0.3))',
                 }}
-              >
-                <span
-                  className="text-base font-black"
-                  style={{
-                    fontFamily: 'Outfit, sans-serif',
-                    background: 'linear-gradient(135deg, #FF1A1A, #E50914)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 0 6px rgba(229,9,20,0.8))',
-                  }}
-                >
-                  TFC
-                </span>
-              </div>
+              />
               <div>
                 <div
                   className="text-xl font-black tracking-wide"
@@ -111,7 +101,7 @@ export default function Footer() {
                 >
                   The<span style={{ WebkitTextFillColor: '#E50914' }}>Final</span>Cut
                 </div>
-                <div className="text-xs text-cinema-silver tracking-widest">CINEMA REDEFINED</div>
+                <div className="text-xs text-cinema-silver tracking-widest">WATCH CINEMA BETTER</div>
               </div>
             </Link>
 
